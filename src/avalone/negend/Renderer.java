@@ -122,6 +122,24 @@ public class Renderer
 			tile.subID = oldSub;
 			addMineral(tile);
 		}
+		if(tile.debug)
+		{
+			glapi.drawAlphaRect(tile.coord, tile.coord.clone(Const.tailleCase),"RED",0.5f);
+			glapi.clearFilter();
+			tile.debug = false;
+		}
+		if(tile.debug2)
+		{
+			glapi.drawAlphaRect(tile.coord, tile.coord.clone(Const.tailleCase),"GREEN",0.5f);
+			glapi.clearFilter();
+			tile.debug2 = false;
+		}
+		if(tile.debug3)
+		{
+			glapi.drawAlphaRect(tile.coord, tile.coord.clone(Const.tailleCase),"BLUE",0.5f);
+			glapi.clearFilter();
+			tile.debug3 = false;
+		}
 	}
 	
 	/*public void drawItem(Point p1,Point p2,int id, int subID)
@@ -181,6 +199,11 @@ public class Renderer
 		glapi.drawAlphaRect(new Point(),new Point(Const.tailleFenX,1),"red",0.5f);
 		glapi.drawAlphaRect(new Point(0,Const.tailleFenY-1),new Point(Const.tailleFenX,Const.tailleFenY),"red",0.5f);
 		glapi.clearFilter();
+	}
+	
+	public void addMarker()
+	{
+		
 	}
 	
 	public void drawShadowGroup(ArrayList<Point> p1s,ArrayList<Point> p2s,int light)

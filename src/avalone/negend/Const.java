@@ -2,11 +2,12 @@ package avalone.negend;
 
 public class Const 
 {
-	public static final boolean debug = false;
+	public static final boolean debug = true;
 	
 	public static final int tailleChunkX = 75;
 	public static final int tailleChunkY = 38;
 	public static final int tailleCase = 16;
+	public static final int tailleItem = 10;
 	public static final int tailleFenX = 1200;
 	public static final int tailleFenY = 608;
 	public static final int totalJump = 2;
@@ -35,6 +36,15 @@ public class Const
 	public static final int rightSubID = 3;
 	public static final int mineralID = Const.unplacableOffset;
 	
+	public static final int hillsBiome = 0;
+	public static final int plainsBiome = 1;
+	public static final int mountainsBiome = 2;
+	public static final int oceanBiome = 3;
+	public static final int beachBiome = 4;
+	public static final int deepOceanBiome = 5;
+	public static final int skyMountainsBiome = 6;
+	public static final int nbBiomes = 7;
+	
 	public static int max(int a,int b)
 	{
 		if(a > b)
@@ -58,7 +68,7 @@ public class Const
 	{
 		if(debug)
 		{
-			System.out.println("debug " + words);
+			System.out.println("[debug] " + words);
 		}
 	}
 }

@@ -5,6 +5,7 @@ public enum EnumItem
 	vide(false,false,false,false),
 	standardBlock(true,false,false,true),
 	mineralBlock(true,true,false,true),
+	general(false,false,false,true),
 	weapon(false,false,true,false);
 	
 	public boolean placable;

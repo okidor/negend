@@ -13,6 +13,7 @@ public class Inventory
 	private Item onMouseItem;
 	private int onMouseNumber;
 	private AliveEntity owner;
+	private int size;
 	
 	private static final Item noItem = new ItemBlock(0,0);
 	
@@ -22,6 +23,7 @@ public class Inventory
 		objectNumber = new int[30];
 		selectedItem = 0;
 		slotmax = 1;
+		size = 30;
 		this.owner = owner;
 		init();
 	}
@@ -31,7 +33,7 @@ public class Inventory
 		GameFile game = new GameFile("mod/startInventory.txt");
 		ArrayList<String[]> slotList = new ArrayList<String[]>();
 		slotList = game.al;
-		for(int i = 0;i < 30;i++)
+		for(int i = 0;i < size;i++)
 		{
 			/*String[] s = slotList.get(i);
 			if(Integer.decode(s[3]) <= Const.unplacableOffset)
@@ -44,6 +46,11 @@ public class Inventory
 		}
 		onMouseItem = noItem;
 		onMouseNumber = 0;
+	}
+	
+	public int getSize()
+	{
+		return size;
 	}
 	
 	public int getSelectedID()
@@ -117,7 +124,9 @@ public class Inventory
 				objectNumber[selectedItem] --;
 				if(objectNumber[selectedItem] == 0)
 				{
+					Item tmp = objectType[selectedItem];
 					objectType[selectedItem] = noItem;
+					return tmp;
 				}
 			}
 			return objectType[selectedItem];
@@ -139,7 +148,7 @@ public class Inventory
 				}
 			}
 		}
-		for(int i = 0;i < 30;i++)
+		for(int i = 0;i < size;i++)
 		{
 			if(objectType[i].id == 0)
 			{
@@ -154,7 +163,7 @@ public class Inventory
 	public void addMineral(int subID,float[] color)
 	{
 		MineralItem invItem = new MineralItem(subID,color); 
-		for(int i = 0;i < 30;i++)
+		for(int i = 0;i < size;i++)
 		{
 			if(objectType[i].id == invItem.id && objectType[i].subID == invItem.subID && objectNumber[i] < 999)
 			{
@@ -162,7 +171,7 @@ public class Inventory
 				return;
 			}
 		}
-		for(int i = 0;i < 30;i++)
+		for(int i = 0;i < size;i++)
 		{
 			if(objectType[i].id == 0)
 			{
@@ -256,5 +265,15 @@ public class Inventory
 			s = " " + s;
 		}
 		rend.drawText(p1, p1.clone(16), s, "red");
+	}
+	
+	public Item itemForSave(int ind)
+	{
+		return objectType[ind];
+	}
+	
+	public int numberForSave(int ind)
+	{
+		return objectNumber[ind];
 	}
 }

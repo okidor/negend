@@ -11,16 +11,18 @@ public class WorldItem extends Entity
 	private int amount;
 	private AliveEntity target;
 	private int radius;
+	private boolean shouldNotSpawn;
 	
 	protected WorldItem(int posX, int posY, Chunk spawn,Item item,int amount) 
 	{
-		super(posX, posY, spawn);
+		super(posX + (Const.tailleCase - Const.tailleItem)/2, posY/* + (Const.tailleCase - Const.tailleItem)/2*/, spawn);
 		this.item = item;
 		this.amount = amount;
 		radius = 2;
-		tailleX = Const.tailleCase;
-		tailleY = Const.tailleCase;
-		vit = 10;
+		tailleX = Const.tailleItem;
+		tailleY = Const.tailleItem;
+		vitY = 8;
+		shouldNotSpawn = false;
 		setAroundFromChunk(spawn);
 		changeItem();
 	}
@@ -32,19 +34,29 @@ public class WorldItem extends Entity
 			//System.out.println("target is null");
 			return;
 		}
+		if(shouldNotSpawn)
+		{
+			currentChunk.itemList.remove(this);
+			return;
+		}
 		if(pos.x + tailleX >= target.pos.x && pos.x <= target.pos.x + target.tailleX)
 		{
 			if(pos.y + tailleY >= target.pos.y && pos.y <= target.pos.y + target.tailleY)
 			{
 				target.inv.addItem(item,amount);
-				System.out.println("id = " + item.id + " et subID = " + item.subID);
-				System.out.println(item.isStackable());
-				destroy();
+				Const.debug("(WorldItem:movements): id = " + item.id + " et subID = " + item.subID);
+				Const.debug("(WorldItem:movements):" + item.isStackable());
+				//destroy();
+				currentChunk.itemList.remove(this);
 			}
 		}
-		else if(distance(pos,target.pos) < radius*tailleCase)
+		else if(distance(pos,target.pos) < radius * Const.tailleCase)
 		{
 			goTowards(target);
+		}
+		else
+		{
+			Physic.unstuck(this);
 		}
 	}
 	
@@ -86,7 +98,12 @@ public class WorldItem extends Entity
 				item.id = 0;
 				item.subID = 0;
 				item.texture = Block.getBlock(0).getTexture(0);
-				destroy();
+				shouldNotSpawn = true;
+			case 10:
+				item.id = 2;
+				item.subID = 0;
+				item.texture = Block.getBlock(2).getTexture(0);
+				break;
 			default:
 				break;
 		}
@@ -94,10 +111,7 @@ public class WorldItem extends Entity
 	
 	public void draw(Renderer rend)
 	{
-		if(!isDestroyed())
-		{
-			rend.draw(pos,pos.clone(16),item.texture);
-		}
+		rend.draw(pos,pos.clone(Const.tailleItem),item.texture);
 	}
 	
 	public void setTarget(AliveEntity ent)

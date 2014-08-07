@@ -8,4 +8,9 @@ public class WeaponItem extends Item
 	{
 		super(id+ Const.unplacableOffset + 1,subID,EnumItem.weapon,tier,level,texture);
 	}
+	
+	public void setType()
+	{
+		type = 3;
+	}
 }

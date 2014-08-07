@@ -11,23 +11,24 @@ public abstract class Chunk
 	protected Renderer rend;
 	public Point pos;
 	protected int surfaceModifier;
-	protected int leftModifier;
-	protected int rightModifier;
 	protected int[] surfaceModifRegister;
 	protected boolean setLight;
 	public ArrayList<Mob> mobList;
 	public ArrayList<Player> playerList;
 	protected ArrayList<WorldItem> itemList;
-	protected Chunk cSide;
+	protected Chunk cHorizontal;
+	protected Chunk cVertical;
 	protected int luckFactor;
 	protected boolean genFlag;
 	public Chunk[] chunkBuffer;
+	public Map map;
+	protected boolean lock;
 	
-	protected Chunk(Point pos,Chunk cSide,boolean setLight,Renderer rend)
+	protected Chunk(Map map,Point pos,boolean setLight,Renderer rend)
 	{
 		this.pos = pos;
 		cases = new Tile[Const.tailleChunkX][Const.tailleChunkY];
-		this.cSide = cSide;
+		initCases();
 		this.rend = rend;
 		this.setLight = setLight;
 		surfaceModifRegister = new int[Const.tailleChunkX];
@@ -35,14 +36,15 @@ public abstract class Chunk
 		playerList = new ArrayList<Player>();
 		itemList = new ArrayList<WorldItem>();
 		chunkBuffer = new Chunk[9];
-		//setSurfaceModifier();
+		this.map = map;
+		chunkBuffer[4] = this;
 	}
-	
-	public abstract void setSurfaceModifier();
 	
 	public abstract void generate(Random rand,Ore[] ores);
 	
 	public abstract Block chooseBlock(int posX,int posY);
+	
+	public abstract void extendGen(Random rand);
 	
 	public void light()
 	{
@@ -149,21 +151,35 @@ public abstract class Chunk
 	
 	public void smooth()
 	{
+		Const.debug("(Chunk:smooth): placer cette fonction dans surfaceChunk");
 		for(int i = 0;i < Const.tailleChunkX;i++)
 		{
-			for(int j = 0;j < cases[0].length;j++)
+			for(int j = 0;j < Const.tailleChunkY;j++)
 			{
-				if(cases[i][j].getBlockID() == Block.grass.blockID)
+				if(i > 0 && i < Const.tailleChunkX - 1)
 				{
-					if(i > 0 && i < Const.tailleChunkX - 1)
+					if(j > 0 && j < Const.tailleChunkY - 1)
 					{
-						if(j > 0 && j < Const.tailleChunkY - 1)
+						if(cases[i][j].getBlockID() == Block.grass.blockID)
 						{
 							if(cases[i-1][j].getBlockID() == Block.air.blockID && cases[i+1][j].getBlockID() == Block.air.blockID) 
-							cases[i][j].destroyBlock();
-							cases[i][j].subID = 0;
-							cases[i][j-1].setBlock(Block.grass);
-							cases[i][j-1].subID = 0;
+							{
+								cases[i][j].destroyBlock();
+								cases[i][j].subID = 0;
+								cases[i][j-1].setBlock(Block.grass);
+								cases[i][j-1].subID = 0;
+							}
+						}
+						else if(cases[i][j].getBlockID() == Block.air.blockID)
+						{
+							if(cases[i-1][j].getBlockID() == Block.grass.blockID && cases[i+1][j].getBlockID() == Block.grass.blockID) 
+							{
+								if(cases[i][j-1].getBlockID() == Block.grass.blockID)
+								{
+									cases[i][j].setBlock(Block.grass);
+									cases[i][j-1].setBlock(Block.dirt);
+								}
+							}
 						}
 					}
 				}
@@ -225,7 +241,7 @@ public abstract class Chunk
 			updateLight();
 		}
 		grassGrow();
-		// blockFlow(cAround[7],cAround[1],cAround[3],cAround[5]);
+		// blockFlow(cAround[7],cAround[1],cAro							//cases[i][j].debugShadow(rend, offsetX, offsetY);und[3],cAround[5]);
 		for(int i = 0;i < cases.length;i++)
 		{
 			for(int j = 0;j < cases[0].length;j++)
@@ -241,6 +257,30 @@ public abstract class Chunk
 						rend.addMineral(cases[i][j]);
 					}
 				}
+				else
+				{
+					if(cases[i][j].debug)
+					{
+						rend.getAPI().unbindTexture();
+						rend.getAPI().drawAlphaRect(cases[i][j].coord, cases[i][j].coord.clone(Const.tailleCase),"RED",0.5f);
+						rend.getAPI().clearFilter();
+						cases[i][j].debug = false;
+					}
+					if(cases[i][j].debug2)
+					{
+						rend.getAPI().unbindTexture();
+						rend.getAPI().drawAlphaRect(cases[i][j].coord, cases[i][j].coord.clone(Const.tailleCase),"GREEN",0.5f);
+						rend.getAPI().clearFilter();
+						cases[i][j].debug2 = false;
+					}
+					if(cases[i][j].debug3)
+					{
+						rend.getAPI().unbindTexture();
+						rend.getAPI().drawAlphaRect(cases[i][j].coord, cases[i][j].coord.clone(Const.tailleCase),"BLUE",0.5f);
+						rend.getAPI().clearFilter();
+						cases[i][j].debug3 = false;
+					}
+				}
 			}
 		}
 		drawShadows();
@@ -254,33 +294,25 @@ public abstract class Chunk
 		for(int i = 0;i < itemList.size();i++)
 		{
 			WorldItem item = itemList.get(i);
-			if(item.isDestroyed())
+			ArrayList<AliveEntity> tmp = new ArrayList<AliveEntity>();
+			for(int j = 0;j < mobList.size();j++)
 			{
-				itemList.remove(item);
+				if(mobList.get(j).health > 0)
+				{
+					tmp.add(mobList.get(j));
+				}
 			}
-			else
+			for(int j = 0;j < playerList.size();j++)
 			{
-				ArrayList<AliveEntity> tmp = new ArrayList<AliveEntity>();
-				for(int j = 0;j < mobList.size();j++)
+				if(playerList.get(j).health > 0)
 				{
-					if(mobList.get(j).health > 0)
-					{
-						tmp.add(mobList.get(j));
-					}
+					tmp.add(playerList.get(j));
 				}
-				for(int j = 0;j < playerList.size();j++)
-				{
-					if(playerList.get(j).health > 0)
-					{
-						tmp.add(playerList.get(j));
-					}
-				}
-				item.setTargetToNearest(tmp);
-				Physic.verifyGrav(item,rend.getAPI());
-				item.movements(rend.getAPI());
-				item.draw(rend);
 			}
-			
+			item.setTargetToNearest(tmp);
+			Physic.verifyGrav(item,rend.getAPI());
+			item.movements(rend.getAPI());
+			item.draw(rend);
 		}
 	}
 	
@@ -347,18 +379,9 @@ public abstract class Chunk
 							Point p1 = cases[i][j].coord.clone(0);
 							p1s.add(p1);
 							p2s.add(p1.clone(Const.tailleCase));
-							//cases[i][j].debugShadow(rend, offsetX, offsetY);
 						}
 					}
 				}
-				/*for(int i = 0;i < p1s.size();i++)
-				{
-					int x = (p1s.get(i).x-offsetX)/Const.tailleCase;
-					int y = (p1s.get(i).y-offsetY)/Const.tailleCase;
-					rend.draw(p1s.get(i),p2s.get(i),cases[x][y],offsetX,offsetY);
-				}
-				rend.getAPI().unbindTexture();*/
-				
 				rend.drawShadowGroup(p1s, p2s, k);
 			}
 		}
@@ -370,15 +393,24 @@ public abstract class Chunk
 		rend.drawChunkLimit();
 	}
 	
-	public void initCases(Random rand, Ore[] ores)
+	public void initCases()
 	{
 		for(int i = 0;i < Const.tailleChunkX;i++)
 		{
 			for(int j = 0;j < Const.tailleChunkY;j++)
 			{
-				//cases[i][j] = new Block(i*Const.tailleCase,j*Const.tailleCase,chooseBlock(i,j));
-				cases[i][j] = new Tile(i*Const.tailleCase,j*Const.tailleCase,chooseBlock(i,j));
-				//cases[i][j].block.setLayer(rend);
+				cases[i][j] = new Tile(i*Const.tailleCase,j*Const.tailleCase);
+			}
+		}
+	}
+	
+	public void initGen(Random rand, Ore[] ores)
+	{
+		for(int i = 0;i < Const.tailleChunkX;i++)
+		{
+			for(int j = 0;j < Const.tailleChunkY;j++)
+			{
+				cases[i][j].setBlock(chooseBlock(i,j));
 				int b = rand.nextInt(ores.length);
 				int c = rand.nextInt(luckFactor);
 				if(c == 0 && cases[i][j].getBlockSolidity().equals("solid"))
@@ -388,6 +420,7 @@ public abstract class Chunk
 				}
 			}
 		}
+		extendGen(rand);
 		if(setLight)
 		{
 			light();
@@ -397,14 +430,11 @@ public abstract class Chunk
 	public int getFirstAirBlockHeight(int posX)
 	{
 		int gridX = posX/Const.tailleCase;
-		Const.debug("(Chunk:getFirstAirBlockHeight): on grid, x = " + gridX);
 		for(int i = 0;i < Const.tailleChunkY-2;i++)
 		{
-			Const.debug("(Chunk:getFirstAirBlockHeight): block id is " + cases[gridX][i].getBlockID());
 			if(cases[gridX][i].getBlockID() == Block.grass.blockID && cases[gridX][i+1].getBlockID() == Block.air.blockID && cases[gridX][i+2].getBlockID() == Block.air.blockID)
 			{
-				Const.debug("(Chunk:getFirstAirBlockHeight): found height");
-				return cases[gridX][i+1].yB;
+				return cases[gridX][i+1].coord.y;
 			}
 		}
 		return -1;
@@ -427,7 +457,6 @@ public abstract class Chunk
 	{
 		if(cases[x][y].getBlockID() != 0)
 		{
-			//System.out.println(cases[x][y].subID);
 			boolean mineral = false;
 			if(cases[x][y].subID < 0)
 			{
@@ -435,13 +464,12 @@ public abstract class Chunk
 				cases[x][y].subID = (cases[x][y].subID + 1 + cases[x][y].ore.id) * (-1);
 				inv.addMineral(cases[x][y].ore.id,cases[x][y].ore.color);
 			}
-			//inv.addItem(cases[x][y].blockID,cases[x][y].subID);
-			System.out.println("id of worlditem spawned = " + cases[x][y].getBlockID());
+			Const.debug("(Chunk:destroyBlock): id of worlditem spawned = " + cases[x][y].getBlockID());
 			if(mineral)
 			{
-				addWorldItem(new WorldItem(cases[x][y].xG,cases[x][y].yB,this,new MineralItem(cases[x][y].subID,cases[x][y].ore.color),1));
+				addWorldItem(new WorldItem(cases[x][y].coord.x,cases[x][y].coord.y,this,new MineralItem(cases[x][y].subID,cases[x][y].ore.color),1));
 			}
-			addWorldItem(new WorldItem(cases[x][y].xG,cases[x][y].yB,this,new ItemBlock(cases[x][y].getBlockID(),cases[x][y].subID),1));
+			addWorldItem(new WorldItem(cases[x][y].coord.x,cases[x][y].coord.y,this,new ItemBlock(cases[x][y].getBlockID(),cases[x][y].subID),1));
 			cases[x][y].destroyBlock();
 		}
 	}
@@ -450,6 +478,30 @@ public abstract class Chunk
 	{
 		if(cases[x][y].getBlockID() == 0)
 		{
+			for(int i = 0; i < playerList.size();i++)
+			{
+				Player tmpPlay = playerList.get(i);
+				if(tmpPlay.currentCaseLeft().num.x == x && tmpPlay.currentCaseLeft().num.y == y)
+				{
+					Const.debug("(Chunk:addBlock): tried to place a block on player (currentCaseLeft)");
+					return;
+				}
+				else if(tmpPlay.currentCaseRight().num.x == x && tmpPlay.currentCaseRight().num.y == y)
+				{
+					Const.debug("(Chunk:addBlock): tried to place a block on player (currentCaseRight)");
+					return;
+				}
+				else if(tmpPlay.headLeft().num.x == x && tmpPlay.headLeft().num.y == y)
+				{
+					Const.debug("(Chunk:addBlock): tried to place a block on player (headLeft)");
+					return;
+				}
+				else if(tmpPlay.headRight().num.x == x && tmpPlay.headRight().num.y == y)
+				{
+					Const.debug("(Chunk:addBlock): tried to place a block on player (headRight)");
+					return;
+				}
+			}
 			Item tmp = inv.useItem();
 			cases[x][y].setBlock(tmp);
 			cases[x][y].light = 6;

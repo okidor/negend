@@ -6,7 +6,9 @@ public class Physic
 {
 	public static void verifyGrav(Entity ent,AvaloneGLAPI glapi)
 	{
-		if(ent.vit <= 0)
+		applyGrav(ent);
+		secureScroll(glapi,ent,0,ent.vitY);
+		if(ent.vitY <= 0)
 		{
 			//System.out.println("descente");
 			checkCollisionFromGravity(ent, glapi,ent.cAround[7]);
@@ -20,121 +22,163 @@ public class Physic
 	
 	public static void checkCollisionFromJump(Entity ent,AvaloneGLAPI glapi,Chunk cUp)
 	{
-		if(ent.vit > -Const.tailleCase + 1)
+		if(ent.overHeadLeft().getBlockSolidity().equals("solid") || ent.overHeadRight().getBlockSolidity().equals("solid"))
 		{
-			ent.vit = ent.vit + Const.gravity;
+			int oldPos = ent.pos.y;
+			ent.vitY = 0;
+			ent.pos.y = ent.overHeadLeft().yB - ent.tailleY;
+			secureScroll(glapi,ent,0,(ent.pos.y - oldPos));
 		}
-		ent.pos.y = ent.pos.y + ent.vit;
-		secureScroll(glapi,ent,0,ent.vit);
-		if(ent.overHeadLeft().getBlockID() == -1 && ent.overHeadRight().getBlockID() == -1)
+		else
 		{
-			//if(cUp.cases[ent.pos.x/Const.tailleCase][0].blockID == 0 && cUp.cases[(ent.pos.x + ent.tailleX)/Const.tailleCase][0].blockID == 0)
-			if(cUp.cases[ent.pos.x/Const.tailleCase][0].getBlockSolidity().equals("nonsolid") && cUp.cases[(ent.pos.x + ent.tailleX -1)/Const.tailleCase][0].getBlockSolidity().equals("nonsolid"))
+			if(ent.pos.y + ent.tailleY >= Const.tailleChunkY * Const.tailleCase)
 			{
 				ent.changeChunk(cUp, 4, glapi);
 			}
-			else
-			{
-				ent.vit = 0;
-			}
-		}
-		else if(ent.overHeadLeft().getBlockSolidity().equals("solid") && ent.overHeadRight().getBlockSolidity().equals("solid"))
-		{
-			int oldPos = ent.pos.y;
-			ent.vit = 0;
-			ent.pos.y = ent.overHeadLeft().coord.y - Const.tailleCase * 2;
-			secureScroll(glapi,ent,0,(ent.pos.y - oldPos));
 		}
 	}
 	
 	public static void checkCollisionFromGravity(Entity ent,AvaloneGLAPI glapi,Chunk cDown)
 	{
-		ent.oldPos.y = ent.pos.y;
-		Tile currentL = ent.currentCaseLeft();
-		Tile currentR = ent.currentCaseRight();
-		//if(currentL.blockID != 0 || currentR.blockID != 0)
-		if(currentL.getBlockSolidity().equals("solid") || currentR.getBlockSolidity().equals("solid"))
+		if(ent.currentCaseLeft().getBlockSolidity().equals("solid") || ent.currentCaseRight().getBlockSolidity().equals("solid"))
 		{
-			if(currentL.getBlockSolidity().equals("solid") && currentR.getBlockSolidity().equals("solid"))
-			{
-				if(ent.overHeadLeft().getBlockSolidity().equals("solid") && ent.overHeadRight().getBlockSolidity().equals("solid"))
-				{
-					System.out.println("enter stucked");
-				}
-				else
-				{
-					ent.pos.y = ent.HeadLeft().coord.y;
-					ent.vit = 0;
-					ent.nbJump = Const.totalJump;
-				}
-			}
-			/*else if(currentL.layer <= ent.layer && currentR.layer <= ent.layer)
-			{
-				ent.pos.y = ent.HeadLeft().coord.y;
-				ent.vit = 0;
-				ent.nbJump = Const.totalJump;
-			}*/
-			else
-			{
-				fall(ent);
-			}
-		}
-		else if((ent.underFeetLeft().getBlockSolidity().equals("solid") || ent.underFeetLeft().getBlockID() == -1) || 
-				ent.underFeetRight().getBlockSolidity().equals("solid") || ent.underFeetRight().getBlockID() == -1)
-		//else if(ent.underFeetLeft().blockID != 0 || ent.underFeetRight().blockID != 0)
-		{
-			/*System.out.println("layer: underenterleft = " + ent.underenterLeft().layer);
-			System.out.println("layer: enter = " + ent.layer);*/
-			boolean ul = /*ent.underFeetLeft().block.layer > ent.layer ||*/ ent.underFeetLeft().getBlockID() == 0;
-			boolean ur = /*ent.underFeetRight().block.layer > ent.layer ||*/ ent.underFeetRight().getBlockID() == 0;
-			if(ul && ur)
-			{
-				fall(ent);
-			}
-			//if(ent.underenterLeft().layer <= ent.layer || ent.underenterRight().layer <= ent.layer)
-			else
-			{
-				if(ent.currentCaseLeft().yB == ent.pos.y)
-				{
-					ent.vit = 0;
-					ent.nbJump = Const.totalJump;
-				}
-				else
-				{
-					if(ent.vit > (-1*Const.tailleCase) + 1)
-					{
-						ent.vit = ent.vit + Const.gravity;
-					}
-					if(ent.pos.y + ent.vit > ent.currentCaseLeft().yB)
-					{
-						ent.pos.y = ent.pos.y + ent.vit;
-					}
-					else
-					{
-						ent.pos.y = ent.currentCaseLeft().coord.y;
-					}
-				}
-			}
-			if(ent.underFeetLeft().getBlockID() == -1 && ent.underFeetRight().getBlockID() == -1)
-			{
-				if(ent.pos.x/Const.tailleCase < Const.tailleChunkX)
-				{
-					if(cDown.cases[ent.pos.x/Const.tailleCase][Const.tailleChunkY-1].getBlockID() == 0)
-					{
-						ent.changeChunk(cDown, 3, glapi);
-					}
-				}
-			}
+			int oldPos = ent.pos.y;
+			ent.vitY = 0;
+			ent.pos.y = ent.currentCaseLeft().yH;
+			secureScroll(glapi,ent,0,(ent.pos.y - oldPos));
+			ent.nbJump = Const.totalJump;
 		}
 		else
 		{
-			fall(ent);
+			if(ent.pos.y < 0)
+			{
+				ent.changeChunk(cDown, 3, glapi);
+			}
 		}
-		secureScroll(glapi,ent,0,ent.pos.y-ent.oldPos.y);
-		//System.out.println(ent.pos.y-ent.oldPos.y);
 	}
 	
-	public static void checkCollisionFromMovements()
+	public static void checkCollisionFromLeft(Entity ent,AvaloneGLAPI glapi)
+	{
+		if(ent.currentCaseLeft().getBlockSolidity().equals("solid") || ent.headLeft().getBlockSolidity().equals("solid"))
+		{
+			int tmpPosX = ent.pos.x;
+			ent.pos.x = ent.currentCaseLeft().xD;
+			int diff = -Const.depl - (tmpPosX - ent.pos.x);
+			secureScroll(glapi,ent,diff,0);
+		}
+		else
+		{
+			if(ent.pos.x < 0)
+			{
+				ent.changeChunk(ent.cAround[3],1,glapi);
+			}
+			else
+			{
+				secureScroll(glapi,ent,-Const.depl,0);
+			}
+		}
+	}
+	
+	public static void checkCollisionFromRight(Entity ent,AvaloneGLAPI glapi)
+	{
+		if(ent.currentCaseRight().getBlockSolidity().equals("solid") || ent.headRight().getBlockSolidity().equals("solid"))
+		{
+			int tmpPosX = ent.pos.x;
+			ent.pos.x = ent.currentCaseRight().xG - ent.tailleX;
+			int diff = Const.depl - (tmpPosX - ent.pos.x);
+			secureScroll(glapi,ent,diff,0);
+		}
+		else
+		{
+			if(ent.pos.x + ent.tailleX > Const.tailleChunkX * Const.tailleCase)
+			{
+				ent.changeChunk(ent.cAround[5],2,glapi);
+			}
+			else
+			{
+				secureScroll(glapi,ent,Const.depl,0);
+			}
+		}
+	}
+	
+	public static void unstuck(WorldItem item)
+	{
+		int i = 0;
+		if(!item.currentCaseLeft().getBlockSolidity().equals("solid"))
+		{
+			if(item.currentCaseLeft().coord.x + Const.tailleCase/2 < item.pos.x)
+			{
+				item.pos.x = item.pos.x - 2;
+			}
+		}
+		else if(!item.currentCaseRight().getBlockSolidity().equals("solid"))
+		{
+			if(item.currentCaseRight().coord.x + Const.tailleCase/2 > item.pos.x)
+			{
+				item.pos.x = item.pos.x + 2;
+			}
+		}
+		else if(!item.underFeetLeft().getBlockSolidity().equals("solid"))
+		{
+			if(item.underFeetLeft().coord.x + Const.tailleCase/2 < item.pos.x)
+			{
+				item.pos.x = item.pos.x - 2;
+			}
+			if(item.underFeetLeft().coord.y + Const.tailleCase/2 < item.pos.y)
+			{
+				item.pos.y = item.pos.y - 2;
+			}
+		}
+		else if(!item.underFeetRight().getBlockSolidity().equals("solid"))
+		{
+			if(item.underFeetRight().coord.x + Const.tailleCase/2 > item.pos.x)
+			{
+				item.pos.x = item.pos.x + 2;
+			}
+			if(item.underFeetRight().coord.y + Const.tailleCase/2 < item.pos.y)
+			{
+				item.pos.y = item.pos.y - 2;
+			}
+		}
+		else if(!item.leftOfFeet().getBlockSolidity().equals("solid"))
+		{
+			if(item.leftOfFeet().coord.x + Const.tailleCase/2 < item.pos.x)
+			{
+				item.pos.x = item.pos.x - 2;
+			}
+		}
+		else if(!item.rightOfFeet().getBlockSolidity().equals("solid"))
+		{
+			if(item.rightOfFeet().coord.x + Const.tailleCase/2 > item.pos.x)
+			{
+				item.pos.x = item.pos.x + 2;
+			}
+		}
+		else if(!item.headLeft().getBlockSolidity().equals("solid"))
+		{
+			if(item.headLeft().coord.x + Const.tailleCase/2 < item.pos.x)
+			{
+				item.pos.x = item.pos.x - 2;
+			}
+			if(item.headLeft().coord.y + Const.tailleCase/2 > item.pos.y)
+			{
+				item.pos.y = item.pos.y + 2;
+			}
+		}
+		else if(!item.headRight().getBlockSolidity().equals("solid"))
+		{
+			if(item.headRight().coord.x + Const.tailleCase/2 > item.pos.x)
+			{
+				item.pos.x = item.pos.x + 2;
+			}
+			if(item.headRight().coord.y + Const.tailleCase/2 > item.pos.y)
+			{
+				item.pos.y = item.pos.y + 2;
+			}
+		}
+	}
+	
+	public static void airFriction()
 	{
 		
 	}
@@ -147,19 +191,12 @@ public class Physic
 		}
 	}
 	
-	private static void fall(Entity ent)
+	private static void applyGrav(Entity ent)
 	{
-		if(ent.vit > (-1*Const.tailleCase) + 1)
+		if(ent.vitY > -Const.tailleCase + 1)
 		{
-			ent.vit = ent.vit + Const.gravity;
+			ent.vitY = ent.vitY + Const.gravity;
 		}
-		ent.pos.y = ent.pos.y + ent.vit;
+		ent.pos.y = ent.pos.y + ent.vitY;
 	}
-	
-	/*public Point interpolationLin(Point p1,Point p2,float f)
-	{
-		int x = (int)(p1.x * (1 - f) + p2.x * f);
-		int y = (int)(p1.y * (1 - f) + p2.y * f);
-		return new Point(x,y);
-	}*/
 }

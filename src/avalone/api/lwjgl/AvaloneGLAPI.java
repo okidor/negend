@@ -320,7 +320,10 @@ public class AvaloneGLAPI
 
     public void glLoopEnd(int i)
     {
-    	Display.update();
+    	if(!isCloseRequest())
+    	{
+    		Display.update();
+    	}
     	Display.sync(i);
     	
     }
@@ -332,9 +335,11 @@ public class AvaloneGLAPI
 
     public void destroyDisplay()
     {
-    	if(!windowCloseRequest)
+    	if(!isCloseRequest())
 		{
     		Display.destroy();
+    		jf.setVisible(false);
+        	jf.dispose();
 		}
     }
     

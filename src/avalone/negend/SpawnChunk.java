@@ -4,13 +4,18 @@ import avalone.api.lwjgl.Point;
 
 public class SpawnChunk extends SurfaceChunk
 {
-	public SpawnChunk(Point pos,boolean setLight,Renderer rend)
+	public SpawnChunk(Map map,Point pos,boolean setLight,Renderer rend,boolean init)
 	{
-		super(pos,null,setLight,rend);
+		super(map,pos,setLight,rend,init);
 	}
 	
 	public void setSurfaceModifier()
 	{
-		surfaceModifier = 3;
+		surfaceModifier = 10;
+	}
+	
+	protected int chooseBiome()
+	{
+		return Const.plainsBiome;
 	}
 }

@@ -14,7 +14,7 @@ import java.util.Random;
 public class Map 
 {
 	private CustomIndex2DList<Chunk> cl;
-	private HashSet<Entity> globalEntityList;
+	//private HashSet<Entity> globalEntityList;
 	public Random rand;
 	private Point origin;
 	private Point end;
@@ -38,7 +38,7 @@ public class Map
 		initConfig();
 		center = new Point(Const.tailleChunkX*Const.tailleCase/2,Const.tailleChunkY*Const.tailleCase/2);
 		cl = new CustomIndex2DList<Chunk>();
-		globalEntityList = new HashSet<Entity>();
+		//globalEntityList = new HashSet<Entity>();
 		rand = new Random();
 		origin = new Point(0,0);
 		end = new Point(tailleX,tailleY);
@@ -53,17 +53,19 @@ public class Map
 		else
 		{
 			Const.debug("(Map): loading a world");
-			SaveHandler save = new SaveHandler("save" + File.separator + gameName);
+			SaveHandler save = new SaveHandler(this,"save" + File.separator + gameName);
 			cl = save.load(rend);
 			SpawnChunk spawnPoint = (SpawnChunk) cl.get(0,0);
-			spawnPlayer(spawnPoint);
+			play = save.getLoadedPlayer();
+			firstScroll(play);
+			//play.currentChunk.playerList.add(play);
 			spawnMob(spawnPoint);
 		}
 	}
 	
 	public void newGame()
 	{
-		SpawnChunk spawnPoint = new SpawnChunk(new Point(),setLight,rend);
+		SpawnChunk spawnPoint = new SpawnChunk(this,new Point(),setLight,rend,true);
 		Const.debug("(Map): generating spawn chunk");
 		generate(spawnPoint);
 		Const.debug("(Map): generating player");
@@ -81,16 +83,16 @@ public class Map
 	
 	public void generate(Chunk c)
 	{
-		c.generate(rand,ores);
 		cl.add(c.pos.x, c.pos.y, c);
+		c.generate(rand,ores);
 	}
 	
 	public void actions()
 	{
 		setChunkAround(play);
-		checkEntities();
+		//checkEntities();
 		Physic.verifyGrav(play,glapi);
-		play.movements(glapi);
+		play.live(glapi);
 		draw();
 		//System.out.println("player drawn at chunk coords: x = " + play.currentChunk.pos.x + " and y = " + play.currentChunk.pos.y);
 	}
@@ -120,7 +122,7 @@ public class Map
 		center.chunkBuffer[8] = checkChunk(center.pos.x+1, center.pos.y-1);
 	}
 	
-	private void checkEntities()
+	/*private void checkEntities()
 	{
 		
 		Iterator<Entity> it = globalEntityList.iterator();
@@ -132,28 +134,23 @@ public class Map
 				setChunkAround(tmp);
 				tmp.updateChunk = false;
 			}
-			else if(tmp.isDestroyed())
+			if(tmp.isDestroyed())
 			{
 				globalEntityList.remove(tmp);
 				Const.debug("(Map:checkEntities): entity removed");
 			}
 		}
-	}
+	}*/
 	
 	public Point genSpawnCoords(Chunk c)
 	{
-		Const.debug("(Map:genSpawnCoords): creating new point");
 		Point p = new Point();
-		Const.debug("(Map:genSpawnCoords): init height");
 		p.y = -1;
-		Const.debug("(Map:genSpawnCoords): randomizing pos(loop)");
 		while(p.y == -1)
 		{
 			p.x = rand.nextInt(Const.tailleChunkX*Const.tailleCase);
 			p.y = c.getFirstAirBlockHeight(p.x);
-			Const.debug("(Map:genSpawnCoords): x = " + p.x + ", " + p.y);
 		}
-		Const.debug("(Map:genSpawnCoords): point created");
 		return p;
 	}
 	
@@ -162,24 +159,24 @@ public class Map
 		Point p = genSpawnCoords(c);
 		Mob mob1 = new Mob(p.x,p.y,c,play);
 		setChunkAround(mob1);
-		globalEntityList.add(mob1);
+		//globalEntityList.add(mob1);
 		c.mobList.add(mob1);
 	}
 	
 	public void spawnPlayer(Chunk spawnPoint)
 	{
-		Const.debug("(Map:spawnPlayer): randomizing spawn coordinates");
 		Point p = genSpawnCoords(spawnPoint);
-		Const.debug("(Map:spawnPlayer): spawning player");
 		play = new Player(p.x,p.y,spawnPoint);
-		Const.debug("(Map:spawnPlayer): adding sword to player inventory");
+		setChunkAround(play);
+		while(play.currentCaseRight().getBlockSolidity().equals("solid"))
+		{
+			p.x--;
+		}
 		play.inv.addItem(new WeaponItem(0,0,10,10,"epee.png"), 1);
 		firstScroll(play);
-		Const.debug("(Map:spawnPlayer): generating chunks around players");
-		setChunkAround(play);
 		
-		globalEntityList.add(play);
-		spawnPoint.playerList.add(play);
+		//globalEntityList.add(play);
+		//spawnPoint.playerList.add(play);
 	}
 	
 	public void firstScroll(Player play)
@@ -192,34 +189,47 @@ public class Map
 	
 	public Chunk checkChunk(int posX,int posY)
 	{
+		return checkChunk(posX,posY,false);
+	}
+	
+	public Chunk checkChunk(int posX,int posY,boolean debug)
+	{
+		if(debug)
+		{
+			Const.debug("(Map:checkChunk): pos = " + posX + ", " + posY);
+			Const.debug("(Map:checkChunk): " + cl.get(posX,posY));
+		}
 		Chunk cFound = cl.get(posX,posY);
-		//System.out.println("");
 		if(cFound == null)
 		{
 			Chunk c;
 			if(posY < 0)
 			{				
-				c = new UndergroundChunk(new Point(posX,posY),checkChunk(posX,posY+1),setLight,rend);
+				c = new UndergroundChunk(this,new Point(posX,posY),setLight,rend);
 				//System.out.println("new underGroundchunk: posX = " + posX + ", posY " + posY);
+				//c.chunkBuffer[1] = checkChunk(posX,posY+1);
 			}
 			else if(posY > 0)
 			{
-				c = new SkyChunk(new Point(posX,posY),checkChunk(posX,posY-1),setLight,rend);
+				c = new SkyChunk(this,new Point(posX,posY),setLight,rend);
+				//c.chunkBuffer[7] = checkChunk(posX,posY-1);
 			}
 			else
 			{
 				if(posX > 0)
 				{
-					c = new SurfaceChunk(new Point(posX,posY),checkChunk(posX-1,posY),setLight,rend);
+					c = new SurfaceChunk(this,new Point(posX,posY),setLight,rend,true);
+					//c.chunkBuffer[3] = checkChunk(posX-1,posY);
 				}
 				else if(posX < 0)
 				{
-					c = new SurfaceChunk(new Point(posX,posY),checkChunk(posX+1,posY),setLight,rend);
+					c = new SurfaceChunk(this,new Point(posX,posY),setLight,rend,true);
+					//c.chunkBuffer[5] = checkChunk(posX+1,posY);
 				}
 				else
 				{
-					c = new SurfaceChunk(new Point(0,0),null,setLight,rend);
-					System.err.println("erreur de selection de chunk");
+					c = new SurfaceChunk(this,new Point(0,0),setLight,rend,true);
+					System.err.println("error while getting chunk,spawn point should exist");
 					System.exit(1);
 				}
 			}
@@ -238,19 +248,19 @@ public class Map
 		int right = 1;
 		int up = -1;
 		int down = 1;
-		if(play.pos.x > 610)
+		if(play.pos.x > Const.tailleFenX/2 + Const.tailleCase*Const.maxLight - 1)
 		{
 			left = 0;
 		}
-		else if(play.pos.x < 590)
+		else if(play.pos.x < Const.tailleFenX/2 - Const.tailleCase*Const.maxLight - 1)
 		{
 			right = 0;
 		}
-		if(play.pos.y > 314)
+		if(play.pos.y > Const.tailleFenY/2 + Const.tailleCase*Const.maxLight - 1)
 		{
 			down = 0;
 		}
-		else if(play.pos.y < 294)
+		else if(play.pos.y < Const.tailleFenY/2 - Const.tailleCase*Const.maxLight - 1)
 		{
 			up = 0;
 		}
@@ -279,13 +289,18 @@ public class Map
 	
 	public void save()
 	{
-		SaveHandler save = new SaveHandler("save" + File.separator + gameName);
+		SaveHandler save = new SaveHandler(this,"save" + File.separator + gameName);
 		save.save(cl);
-		if(newGame)
+		/*if(newGame)
 		{
 			GameFile path = new GameFile(Const.savePath);
 			path.addNewLine(gameName);
 			newGame = false;
-		}
+		}*/
+	}
+	
+	public CustomIndex2DList<Chunk> getCustomList()
+	{
+		return cl;
 	}
 }

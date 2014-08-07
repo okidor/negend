@@ -51,7 +51,7 @@ public abstract class AliveEntity extends Entity
 			if(antiJumpSpamm == 0)
 			{
 				antiJumpSpamm = 10;
-				vit = vit + 10;
+				vitY = vitY + 10;
 				nbJump--;
 			}
     	}
@@ -101,13 +101,13 @@ public abstract class AliveEntity extends Entity
 				WorldItem item = inv.dropItemStack(i);
 				if(item != null)
 				{
-					System.out.println("debug: slot " + i + " has item");
+					Const.debug("(AliveEntity:death): slot " + i + " has item");
 					currentChunk.itemList.add(item);
-					System.out.println("chunkcoords: " + currentChunk.pos.x + ", " + currentChunk.pos.y);
+					Const.debug("(AliveEntity:death): chunkcoords = " + currentChunk.pos.x + ", " + currentChunk.pos.y);
 				}
 				else
 				{
-					System.out.println("debug: slot " + i + " is empty");
+					Const.debug("(AliveEntity:death): slot " + i + " is empty");
 				}
 			}
 			jump();
@@ -119,10 +119,10 @@ public abstract class AliveEntity extends Entity
 			jump();
 			lastJump = false;
 			layer = -1;
-			if(damageCounter == 0)
-			{
-				onDeath();
-			}
+		}
+		else if(damageCounter == 0)
+		{
+			onDeath();
 		}
 	}
 	

@@ -13,15 +13,23 @@ public class Tile
 	public Ore ore;
 	public int subID;
 	public int light;
+	public boolean debug;
+	public boolean debug2;
+	public boolean debug3;
+	private boolean locked;
 	
-	public static final Tile undefined_tile = new Tile(-1,-1,Block.undefined);
+	//public static final Tile undefined_tile = new Tile(-1,-1,Block.undefined);
+	
+	public Tile(int x,int y)
+	{
+		this(x,y,Block.air);
+	}
 	
 	public Tile(int x,int y,Block block)
 	{
-		this.coord = new Point(x,y);
 		coord = new Point(x,y);
 		taille = Const.tailleCase;
-		xG = x; xD = x + taille; yB = y; yH = y + taille;
+		initBorders();
 		num = new Point(coord.x/taille, coord.y/taille);
 		layer = new Block[3];
 		layer[0] = block;
@@ -30,6 +38,8 @@ public class Tile
 		ore = new Ore(-1);
 		subID = 0;
 		initLight();
+		debug = false;
+		locked = false;
 	}
 	
 	public void initLight()
@@ -42,9 +52,50 @@ public class Tile
 		light = Const.maxLight;
 	}
 	
+	public void initBorders()
+	{
+		if(coord.y == 0)
+		{
+			yB = Const.tailleCase*Const.tailleChunkY;
+			yH = coord.y + taille;
+		}
+		else if(coord.y == Const.tailleCase * (Const.tailleChunkY - 1))
+		{
+			yB = coord.y;
+			yH = 0;
+		}
+		else
+		{
+			yB = coord.y;
+			yH = coord.y + taille;
+		}
+		
+		if(coord.x == 0)
+		{
+			xG = Const.tailleChunkX * Const.tailleCase;
+			xD = coord.x + taille;
+		}
+		else if(coord.x == Const.tailleCase * (Const.tailleChunkX - 1))
+		{
+			xG = coord.x;
+			xD = 0;
+		}
+		else
+		{
+			xG = coord.x;
+			xD = coord.x + taille;
+		}
+		   //a revoir pour bords de chunk
+	}
+	
 	public boolean isEmpty()
 	{
 		return true;
+	}
+	
+	public void lock()
+	{
+		locked = true;
 	}
 	
 	public String getTexture()
@@ -64,19 +115,33 @@ public class Tile
 	
 	public void setBlock(Block block)
 	{
-		layer[0] = block;
+		if(!locked)
+		{
+			layer[0] = block;
+		}
+		else
+		{
+			Const.debug("(Tile:setBlock): couldn't change block because tile is locked");
+		}
 	}
 	
 	public void setBlock(Item item)
 	{
-		if(item.isPlacable())
+		if(!locked)
 		{
-			layer[0] = Block.getBlock(item.id);
-			subID = item.subID;
+			if(item.isPlacable())
+			{
+				layer[0] = Block.getBlock(item.id);
+				subID = item.subID;
+			}
+			else
+			{
+				Const.debug("(Tile): tried to place non placable item");
+			}
 		}
 		else
 		{
-			Const.debug("(Tile): tried to place non placable item");
+			Const.debug("(Tile:setBlock): couldn't change block because tile is locked");
 		}
 	}
 	

@@ -1,6 +1,7 @@
 package avalone.negend;
 
 import org.gnome.gdk.RGBA;
+import org.gnome.gtk.Button;
 import org.gnome.gtk.Entry;
 import org.gnome.gtk.Fixed;
 import org.gnome.gtk.Label;
@@ -76,6 +77,11 @@ public class FilePathEntry extends Entry
 		return "new game " + nb;
 	}
 	
+	public void addCreatedGame()
+	{
+		game.addNewLine(getText());
+	}
+	
 	public void setError(String message)
 	{
 		label.overrideColor(StateFlags.NORMAL, RGBA.RED);
@@ -93,5 +99,31 @@ public class FilePathEntry extends Entry
 		int posX = x;
 		int posY = y;
 		fix.put(label,posX,posY);
+	}
+	
+	public boolean update(Button partie)
+	{
+		String message = getText();
+		System.out.println("fpath = " + getText());
+		if(message.length() > 0)
+		{
+			partie.setSensitive(true);
+			if(!gameExists(message))
+			{
+				setWarning("a new game will start");
+				return true;
+			}
+			else
+			{
+				setWarning("a game will continue");
+				return false;
+			}
+		}
+		else
+		{
+			setError("empty");
+			partie.setSensitive(false);
+			return false;
+		}
 	}
 }

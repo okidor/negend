@@ -11,6 +11,7 @@ public class Item
 	public int level;
 	public int damage;
 	public String texture;
+	protected int type;
 	
 	public Item(int id,int subID,EnumItem en,int tier,int level,String texture)
 	{
@@ -21,6 +22,12 @@ public class Item
 		this.level = level;
 		damage = level*tier;
 		this.texture = texture;
+		setType();
+	}
+	
+	public void setType()
+	{
+		type = 0;
 	}
 	
 	public boolean isPlacable()

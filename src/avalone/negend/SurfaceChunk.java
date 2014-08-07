@@ -11,23 +11,27 @@ import avalone.api.lwjgl.Point;
 
 public class SurfaceChunk extends Chunk
 {
+	public int biome;
+	public int sideBiome;
+	protected Random rand;
 	
-	public SurfaceChunk(Point pos,Chunk cSide,boolean setLight,Renderer rend)
+	public SurfaceChunk(Map map,Point pos,boolean setLight,Renderer rend,boolean init)
 	{
-		super(pos,cSide,setLight,rend);
+		super(map,pos,setLight,rend);
+		rand = new Random();
 		luckFactor = 200;
-		setSurfaceModifier();
 	}
 	
-	public void setSurfaceModifier()
+	protected void setSurfaceModifier()
 	{
 		if(pos.x > 0)
 		{
-			surfaceModifier = cSide.rightModifier;
+			surfaceModifier = chunkBuffer[3].surfaceModifRegister[Const.tailleChunkX-1];
 		}
 		else if(pos.x < 0)
 		{
-			surfaceModifier = cSide.leftModifier;
+			Const.debug("(SurfaceChunk:setSurfaceModifier): " + chunkBuffer[5]);
+			surfaceModifier = chunkBuffer[5].surfaceModifRegister[0];
 		}
 	}
 	
@@ -36,80 +40,283 @@ public class SurfaceChunk extends Chunk
 		return pos.x >= 0;
 	}
 	
-	/*public int undergroundLight(int x)
-	{ 
-		return 0;
-	}*/
-	
-	public void generate(Random rand,Ore[] ores)
+	protected int chooseBiome()
 	{
-		int a,b,c;
-		if(positiveX())
+		if(sideBiome == Const.plainsBiome)
 		{
-			for(int i = 0;i < Const.tailleChunkX;i++)
+			int a = rand.nextInt(14);//4
+			//if(a == 0)
+			if(a > 2)
 			{
-				a = rand.nextInt(3);
-				a--;
-				surfaceModifier = surfaceModifier + a;
-				surfaceModifRegister[i] = surfaceModifier;
-				if(surfaceModifier > 30)
-				{
-					surfaceModifier--;
-				}
-				if(i == 0)
-				{
-					leftModifier = surfaceModifier;
-				}
-				genColumn(rand,ores,i);
-			}	
-			rightModifier = surfaceModifier;
+				return Const.hillsBiome;
+			}
+			else if(a == 1)
+			{
+				return Const.beachBiome;
+			}
+			else
+			{
+				return sideBiome;
+			}
+		}
+		else if(sideBiome == Const.hillsBiome)
+		{
+			int a = rand.nextInt(4);
+			if(a == 0)
+			{
+				return Const.plainsBiome;
+			}
+			else if(a == 1)
+			{
+				return sideBiome;
+			}
+			else
+			{
+				return Const.mountainsBiome;
+			}
+		}
+		else if(sideBiome == Const.beachBiome)
+		{
+			int a = rand.nextInt(4);
+			if(a == 0 || a == 1)
+			{
+				return sideBiome;
+			}
+			else if(a == 2)
+			{
+				return Const.plainsBiome;
+			}
+			else
+			{
+				return Const.oceanBiome;
+			}
+		}
+		else if(sideBiome == Const.oceanBiome)
+		{
+			int a = rand.nextInt(5);
+			if(a == 0)
+			{
+				return sideBiome;
+			}
+			else if(a == 3 || a == 4)
+			{
+				return Const.deepOceanBiome;
+			}
+			else
+			{
+				return Const.beachBiome;
+			}
+		}
+		else if(sideBiome == Const.mountainsBiome)
+		{
+			int a = rand.nextInt(5);
+			if(a == 0)
+			{
+				return sideBiome;
+			}
+			else if(a == 3 || a == 4)
+			{
+				return Const.skyMountainsBiome;
+			}
+			else
+			{
+				return Const.hillsBiome;
+			}
+		}
+		else if(sideBiome == Const.deepOceanBiome)
+		{
+			int a = rand.nextInt(3);
+			if(a == 0)
+			{
+				return sideBiome;
+			}
+			else
+			{
+				return Const.oceanBiome;
+			}
+		}
+		else if(sideBiome == Const.skyMountainsBiome)
+		{
+			int a = rand.nextInt(3);
+			if(a == 0)
+			{
+				return sideBiome;
+			}
+			else
+			{
+				return Const.mountainsBiome;
+			}
 		}
 		else
 		{
-			for(int i = Const.tailleChunkX-1;i >= 0;i--)
-			{
-				a = rand.nextInt(3);
-				a--;
-				surfaceModifier = surfaceModifier + a;
-				surfaceModifRegister[i] = surfaceModifier;
-				if(surfaceModifier > 30)
-				{
-					surfaceModifier--;
-				}
-				if(i == cases.length-1)
-				{
-					rightModifier = surfaceModifier;
-				}
-				genColumn(rand,ores,i);
-			}
-			leftModifier = surfaceModifier;
-		}
-		/*if(pos.y == 0)
-		{
-			System.out.println("posX = " + pos.x + ", posY = " + pos.y + ", left: " + leftModifier + ", right: " + rightModifier);
-			System.out.println("________________________________________________");
-		}*/
-		extendGen(rand);
-		if(setLight)
-		{
-			light();
+			Const.debug("(SurfaceChunk:chooseBiome): warning, sideBiome is not valid on chunk: " + pos.x + ", " + pos.y + " (has value:" + sideBiome + ")");
+			return -1;
 		}
 	}
 	
-	private void genColumn(Random rand,Ore[] ores,int i)
+	private void surfaceBiome()
 	{
-		for(int j = 0;j < cases[0].length;j++)
+		int a;
+		if(biome == Const.plainsBiome)
 		{
-			cases[i][j] = new Tile(i*Const.tailleCase,j*Const.tailleCase,chooseBlock(i,j));
-			//cases[i][j].block.setLayer(rend);
-			int b = rand.nextInt(ores.length);
-			int c = rand.nextInt(luckFactor);
-			if(c == 0 && cases[i][j].getBlockSolidity().equals("solid"))
+			a = rand.nextInt(3);
+			a--;
+			surfaceModifier = surfaceModifier + a;
+			if(surfaceModifier > 15)
 			{
-				cases[i][j].ore = ores[b];
-				cases[i][j].subID = (cases[i][j].subID + 1 + b) * (-1);
+				surfaceModifier--;
+			}
+			if(surfaceModifier < 3)
+			{
+				surfaceModifier++;
 			}
 		}
+		else if(biome == Const.hillsBiome)
+		{
+			a = rand.nextInt(5);
+			a = a - 2;
+			surfaceModifier = surfaceModifier + a;
+			if(surfaceModifier > 20)
+			{
+				surfaceModifier--;
+			}
+			else if(surfaceModifier < 7)
+			{
+				if(a != 2)
+				{
+					surfaceModifier = surfaceModifier + 2;
+				}
+			}
+		}
+		else if(biome == Const.beachBiome)
+		{
+			a = rand.nextInt(7);
+			a = a - 3; a = a / 3;
+			surfaceModifier = surfaceModifier + a;
+			if(surfaceModifier > 2)
+			{
+				surfaceModifier--;
+			}
+			if(surfaceModifier < 0)
+			{
+				surfaceModifier = surfaceModifier + 2;
+			}
+		}
+		else if(biome == Const.oceanBiome)
+		{
+			a = rand.nextInt(4);
+			a = a - 2; a = a / 2;
+			surfaceModifier = surfaceModifier + a;
+			if(surfaceModifier > -1)
+			{
+				surfaceModifier = surfaceModifier - 2;
+			}
+			if(surfaceModifier < -15)
+			{
+				surfaceModifier++;
+			}
+		}
+		else if(biome == Const.mountainsBiome)
+		{
+			a = rand.nextInt(3);
+			a--;a = a * 2;
+			surfaceModifier = surfaceModifier + a;
+			if(surfaceModifier < 25)
+			{
+				surfaceModifier = surfaceModifier + 2;
+			}
+		}
+		else if(biome == Const.deepOceanBiome)
+		{
+			a = rand.nextInt(4);
+			a = a - 2;
+			surfaceModifier = surfaceModifier + a;
+			if(surfaceModifier > -15)
+			{
+				surfaceModifier = surfaceModifier - 2;
+			}
+		}
+		else if(biome == Const.skyMountainsBiome)
+		{
+			a = rand.nextInt(4);
+			a--;a = a * 2;
+			surfaceModifier = surfaceModifier + a;
+			if(surfaceModifier < 40)
+			{
+				surfaceModifier = surfaceModifier + 2;
+			}
+		}
+	}
+	
+	public void generate(Random rand,Ore[] ores)
+	{
+		if(pos.x > 0)
+		{
+			chunkBuffer[3] = map.checkChunk(pos.x-1,pos.y);
+			sideBiome = ((SurfaceChunk)chunkBuffer[3]).biome;
+		}
+		else if(pos.x < 0)
+		{
+			chunkBuffer[5] = map.checkChunk(pos.x+1,pos.y);
+			sideBiome = ((SurfaceChunk)chunkBuffer[5]).biome;
+		}
+		else
+		{
+			sideBiome = -1;
+		}
+		biome = chooseBiome();
+		setSurfaceModifier();
+		for(int i = 0;i < Const.tailleChunkX;i++)
+		{
+			surfaceBiome();
+			if(positiveX())
+			{
+				surfaceModifRegister[i] = surfaceModifier;
+			}
+			else
+			{
+				surfaceModifRegister[Const.tailleChunkX-1 - i] = surfaceModifier;
+			}
+		}
+		initGen(rand,ores);
+		Const.debug("(SurfaceChunk:generate): end of function ");
+	}
+	
+	public Block chooseBlock(int posX,int posY)
+	{
+		if(posY == surfaceModifRegister[posX])
+		{
+			if(surfaceModifRegister[posX] > 2)
+			{
+				return Block.grass;
+			}
+			else
+			{
+				return Block.sand;
+			}
+		}
+		
+		if(posY == surfaceModifRegister[posX]-1 || posY == surfaceModifRegister[posX]-2)
+		{
+			if(surfaceModifRegister[posX] > 2)
+			{
+				return Block.dirt;
+			}
+			else
+			{
+				if(posY == surfaceModifRegister[posX])
+				{
+					return Block.stone;
+				}
+				return Block.sand;
+			}
+		}
+		
+		if(posY <= surfaceModifRegister[posX]-3)
+		{
+			return Block.stone;
+		}
+		return Block.air;
 	}
 	
 	public void extendGen(Random rand)
@@ -120,6 +327,10 @@ public class SurfaceChunk extends Chunk
 	
 	public void buildTrees(Random rand)
 	{
+		Const.debug("" + map.getCustomList().get(pos.x,pos.y+1));
+		Const.debug("(SurfaceChunk:buildTrees): appel depuis chunk: " + pos.x + ", " + pos.y);
+		Chunk cUp = map.checkChunk(pos.x, pos.y + 1,true);
+		Const.debug("(SurfaceChunk:buildTrees): chunk reference: " + cUp);
 		int taille;
 		int nbArbres = rand.nextInt(10);
 		ArrayList<Integer> al = new ArrayList<Integer>();
@@ -173,12 +384,44 @@ public class SurfaceChunk extends Chunk
 							}
 						}
 					}
+					else
+					{
+						int debu = y+j;
+						int debug = y+j-Const.tailleChunkY;
+						Const.debug("(SurfaceChunk:buildTrees): height: " + debu + "replaced by " + debug);
+						Const.debug("(SurfaceChunk:buildTrees): chunk pos: " + pos.x + ", " + pos.y + "replaced by " + cUp.pos.x + ", " + cUp.pos.y);
+						cUp.cases[place][y+j-Const.tailleChunkY].setBlock(Block.wood);
+						cUp.cases[place][y+j-Const.tailleChunkY].light = Const.maxLight;
+						cUp.cases[place][y+j-Const.tailleChunkY].subID = 0;
+						cUp.cases[place][y+j-Const.tailleChunkY].lock();
+						if(j > 2)
+						{
+							if(cUp.cases[place+1][y+j-Const.tailleChunkY].getBlockID() == 0)
+							{
+								cUp.cases[place+1][y+j-Const.tailleChunkY].setBlock(Block.leaves);
+								cUp.cases[place+1][y+j-Const.tailleChunkY].subID = j%2;
+								cUp.cases[place+1][y+j-Const.tailleChunkY].lock();
+							}
+							if(cUp.cases[place-1][y+j-Const.tailleChunkY].getBlockID() == 0)
+							{
+								cUp.cases[place-1][y+j-Const.tailleChunkY].setBlock(Block.leaves);
+								cUp.cases[place-1][y+j-Const.tailleChunkY].subID = 2 + j%2;
+								cUp.cases[place-1][y+j-Const.tailleChunkY].lock();
+							}
+						}
+					}
 				}
 				if(y+taille+1 < Const.tailleChunkY)
 				{
 					cases[place][y+taille+1].setBlock(Block.leaves);
 					cases[place][y+taille+1].subID = 4;
 					//cases[place][y+taille+1].block.layer = 1;
+				}
+				else
+				{
+					cUp.cases[place][y+taille+1-Const.tailleChunkY].setBlock(Block.leaves);
+					cUp.cases[place][y+taille+1-Const.tailleChunkY].subID = 4;
+					cUp.cases[place][y+taille+1-Const.tailleChunkY].lock();
 				}
 				if(y+taille < Const.tailleChunkY)
 				{
@@ -188,116 +431,18 @@ public class SurfaceChunk extends Chunk
 						cases[place-1][y+taille].subID = 6;
 					}
 				}
-			}
-		}
-	}
-	
-	public Block chooseBlock(int posX,int posY)
-	{
-		/*if(posY == 17 || posY == 18)
-		{
-			return 9;
-		}*/
-		if(posY == 7+surfaceModifier)
-		{
-			if(surfaceModifier > -5)
-			{
-				return Block.grass;
-			}
-			else
-			{
-				return Block.sand;
-			}
-		}
-		
-		if(posY == 6+surfaceModifier || posY == 5+surfaceModifier)
-		{
-			if(surfaceModifier > -5)
-			{
-				return Block.dirt;
-			}
-			else
-			{
-				if(posY == 5+surfaceModifier)
+				else
 				{
-					return Block.stone;
-				}
-				return Block.sand;
-			}
-		}
-		
-		if(posY <= 4+surfaceModifier)
-		{
-			return Block.stone;
-		}
-		return Block.air;
-	}
-	
-	/*public void blockFlow(SurfaceChunk cDown,SurfaceChunk cUp,SurfaceChunk cLeft,SurfaceChunk cRight)
-	{
-		for(int i = 0;i < cases.length;i++)
-		{
-			for(int j = 0;j < cases[0].length;j++)
-			{
-				if(cases[i][j].block.solidity.equals("liquid"))
-				{
-					Block chosenDown = Block.undefined;
-					Block chosenUp = Block.undefined;
-					Block chosenLeft = Block.undefined;
-					Block chosenRight = Block.undefined;
-					Block chosenLeftLeft = Block.undefined;
-					Block chosenRightRight = Block.undefined;
-					if(j == 0)
+					if(taille%2 == 1)
 					{
-						chosenDown = cDown.cases[i][Const.tailleChunkY-1].block;
+						cUp.cases[place+1][y+taille-Const.tailleChunkY].subID = 5;
+						cUp.cases[place+1][y+taille-Const.tailleChunkY].lock();
+						cUp.cases[place-1][y+taille-Const.tailleChunkY].subID = 6;
+						cUp.cases[place+1][y+taille-Const.tailleChunkY].lock();
 					}
-					else if(j == Const.tailleChunkY-1)
-					{
-						chosenUp = cUp.cases[i][0].block;
-					}
-					else
-					{
-						chosenDown = cases[i][j-1].block;
-						chosenUp = cases[i][j+1].block;
-					}
-					if(i == 0)
-					{
-						chosenLeft = cLeft.cases[Const.tailleChunkX-1][j].block;
-						chosenLeftLeft = cLeft.cases[Const.tailleChunkX-2][j].block;
-						chosenRight = cases[i+1][j].block;
-						chosenRightRight = cases[i+2][j].block;
-					}
-					else if(i == 1)
-					{
-						chosenLeft = cases[i-1][j].block;
-						chosenLeftLeft = cLeft.cases[Const.tailleChunkX-1][j].block;
-						chosenRight = cases[i+1][j].block;
-						chosenRightRight = cases[i+2][j].block;
-					}
-					else if(i == Const.tailleChunkX - 1)
-					{
-						chosenLeft = cases[i-1][j].block;
-						chosenLeftLeft = cases[i-2][j].block;
-						chosenRight = cRight.cases[0][j].block;
-						chosenRightRight = cRight.cases[1][j].block;
-					}
-					else if(i == Const.tailleChunkX - 2)
-					{
-						chosenLeft = cases[i-1][j].block;
-						chosenLeftLeft = cases[i-2][j].block;
-						chosenRight = cases[i+1][j].block;
-						chosenRightRight = cRight.cases[0][j].block;
-					}
-					else
-					{
-						chosenLeft = cases[i-1][j].block;
-						chosenLeftLeft = cases[i-2][j].block;
-						chosenRight = cases[i+1][j].block;
-						chosenRightRight = cases[i+2][j].block;
-					}
-					cases[i][j].block.flow(rend,chosenDown,chosenLeft,chosenRight,chosenLeftLeft,chosenRightRight);
 				}
 			}
 		}
-	}*/
+		Const.debug("(SurfaceChunk:buildTrees): end of function ");
+	}
 }

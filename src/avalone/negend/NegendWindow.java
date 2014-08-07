@@ -77,6 +77,8 @@ public class NegendWindow extends Window
             public void onClicked(Button source)
             {
             	mode = Const.PLAY_MODE;
+            	fpath.addCreatedGame();
+            	//fpath.updat
             	//destroy();
             	source.getParent().getParent().hide();
             	Gtk.mainQuit();
@@ -173,6 +175,11 @@ public class NegendWindow extends Window
 		
 		fix.put(fpath, 180, 240);
 		fpath.putLabel(fix, 355, 245);
+	}
+	
+	public void update()
+	{
+		newGame = fpath.update(partie);
 	}
 	
 	public String realPath(String path)

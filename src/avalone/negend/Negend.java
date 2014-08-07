@@ -23,6 +23,7 @@ public class Negend
 			//neg = new NegendWindow(this,nb);
 			neg.initImages();
 			neg.showAll();
+			neg.update();
 			Gtk.main();
 			mode = neg.mode;
 			if(mode == Const.EDIT_MODE)

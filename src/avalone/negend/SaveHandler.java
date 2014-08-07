@@ -20,10 +20,15 @@ public class SaveHandler
 	private int[] sizes;
 	private BufferedWriter out;
 	private BufferedReader in;
+	private Map map;
+	private int mode;
+	private Player play;
 	
-	public SaveHandler(String gameName)
+	public SaveHandler(Map map,String gameName)
 	{
+		this.map = map;
 		this.gameName = gameName;
+		mode = 0;
 		loaded = new ArrayList<Point>();
 	}
 	
@@ -36,12 +41,14 @@ public class SaveHandler
 		try 
 		{
 			out = new BufferedWriter(new FileWriter(f));
-			out.write("//ores saving will go here\n");
-			out.write("\n");
+			out.write("//ores saving will go here\n");	
 			saveUpLeft();
 			saveUpRight();
 			saveDownLeft();
 			saveDownRight();
+			out.write("#player:\n");
+			savePlayer();
+			out.write("\n");
 			out.close();
 		}
 		catch (IOException e) 
@@ -52,7 +59,7 @@ public class SaveHandler
 	
 	public CustomIndex2DList<Chunk> load(Renderer rend)
 	{
-		cl = new CustomIndex2DList<Chunk>();
+		cl = map.getCustomList();
 		try 
 		{
 			File f = new File(gameName);
@@ -82,19 +89,22 @@ public class SaveHandler
 		return readLine;
 	}
 	
-	private void loadUpLeft(Renderer rend)
+	public void savePlayer() throws IOException
 	{
-		
+		Player play = map.play;
+		out.write(play.pos.x + " " + play.pos.y + " " + play.currentChunk.pos.x + " " + play.currentChunk.pos.y + "\n");
+		Inventory inv = play.inv;
+		out.write("#items:\n");
+		for(int i = 0;i < inv.getSize();i++)
+		{
+			out.write(inv.itemForSave(i).id + " " + inv.itemForSave(i).subID + " " + inv.itemForSave(i).texture + " " + inv.itemForSave(i).level + " " + inv.itemForSave(i).tier + " " + inv.itemForSave(i).type + " ");
+			out.write(inv.numberForSave(i) + "\n");
+		}
 	}
 	
-	private void loadUpRight(Renderer rend)
+	public Player getLoadedPlayer()
 	{
-		
-	}
-	
-	private void loadDownLeft(Renderer rend)
-	{
-		
+		return play;
 	}
 	
 	private void loadParts(Renderer rend) throws IOException
@@ -108,62 +118,108 @@ public class SaveHandler
 				if(!readLine[i].startsWith("//") && !readLine[i].startsWith("#"))
 				{
 					s[i] = readLine[i].split("\\s+");
-					if(i == 1)
+					if(mode == 1)
 					{
-						Chunk c = null;
-						if(s[0].length == 2)
-						{
-							Point p = new Point(Integer.decode(s[0][0]),Integer.decode(s[0][1]));
-							c = new SpawnChunk(p,true,rend);
-							cl.add(c.pos.x, c.pos.y, c);
-							loaded.add(p);
-							System.out.println("spawnpoint loaded : " + c.pos.x + " " + c.pos.y);
-						}
-						else if(s[0].length == 4)
-						{
-							Point p1 = new Point(Integer.decode(s[0][0]),Integer.decode(s[0][1]));
-							Point p2 = new Point(Integer.decode(s[0][2]),Integer.decode(s[0][3]));
-							c = loadChunk(p1,p2,rend);
-							System.out.println("chunk loaded : " + c.pos.x + " " + c.pos.y);
-						}
-						else
-						{
-							System.out.println("storage fail");
-						}
-						loadChunkBlocks(c,s[1],rend);
+						loadPlayerItem(s[i],i);
 					}
-					i = (i + 1) % 2;
+					else if(mode == 2)
+					{
+						if(i == 1)
+						{
+							Chunk c = loadChunk(s,rend);
+							loadChunkBlocks(c,s[1],rend);
+						}
+						i = 1 - i;
+					}
+					else if(mode == 3)
+					{
+						Const.debug("(SaveHandler:loadParts): " + cl.get(Integer.decode(s[i][2]),Integer.decode(s[i][3])));
+						play = new Player(Integer.decode(s[i][0]),Integer.decode(s[i][1]),cl.get(Integer.decode(s[i][2]),Integer.decode(s[i][3])));
+					}
+				}
+				else if(readLine[i].startsWith("#"))
+				{
+					s[i] = readLine[i].split("\\s+");
+					if(s[i][0].equals("#items:"))
+					{
+						Const.debug("(SaveHandler:loadParts): now loading items");
+						i = 0;
+						mode = 1;
+					}
+					else if(s[i][0].equals("#chunks:"))
+					{
+						Const.debug("(SaveHandler:loadParts): now loading chunks");
+						i = 0;
+						mode = 2;
+					}
+					else if(s[i][0].equals("#player:"))
+					{
+						Const.debug("(SaveHandler:loadParts): now loading player");
+						i = 0;
+						mode = 3;
+					}
 				}
 			}
 		}
 	}
 	
-	private Chunk loadChunk(Point p1,Point p2,Renderer rend)
+	private void loadPlayerItem(String[] s,int i)
 	{
-		loaded.add(p1);
-		Chunk c;
-		if(p1.y < 0)
-		{				
-			c = new UndergroundChunk(p1,cl.get(p2.x,p2.y),true,rend);
-		}
-		else if(p1.y > 0)
+		Inventory inv = play.inv;
+		Item item;
+		if(Integer.decode(s[5]) == 1)
 		{
-			c = new SkyChunk(p1,cl.get(p2.x,p2.y),true,rend);
+			item = new ItemBlock(Integer.decode(s[0]),Integer.decode(s[1]));
+		}
+		else if(Integer.decode(s[5]) == 2)
+		{
+			float[] f = new float[3];
+			f[0] = 0;
+			f[1] = 0;
+			f[2] = 0;
+			item = new MineralItem(Integer.decode(s[1]),f);
+		}
+		else if(Integer.decode(s[5]) == 3)
+		{
+			item = new WeaponItem(Integer.decode(s[0]),Integer.decode(s[1]),Integer.decode(s[4]),Integer.decode(s[3]),s[2]);
 		}
 		else
 		{
-			if(p1.x > 0)
+			item = new Item(Integer.decode(s[0]),Integer.decode(s[1]),EnumItem.general,Integer.decode(s[4]),Integer.decode(s[3]),s[2]);
+		}
+		inv.addItem(item,Integer.decode(s[6]));
+	}
+	
+	private Chunk loadChunk(String[][] s,Renderer rend)
+	{
+		Point p1 = new Point(Integer.decode(s[0][0]),Integer.decode(s[0][1]));
+		loaded.add(p1);
+		Chunk c;
+		Const.debug("(SaveHandler:loadChunk): p1:" + p1.x + ", " + p1.y);
+		if(p1.x == 0 && p1.y == 0)
+		{
+			Const.debug("(SaveHandler:loadChunk): spawn will be loaded");
+			c = new SpawnChunk(map,p1,true,rend,false);
+		}
+		else if(p1.y < 0)
+		{				
+			Const.debug("(SaveHandler:loadChunk): underground will be loaded");
+			c = new UndergroundChunk(map,p1,true,rend);
+		}
+		else if(p1.y > 0)
+		{
+			Const.debug("(SaveHandler:loadChunk): sky will be loaded");
+			c = new SkyChunk(map,p1,true,rend);
+		}
+		else
+		{
+			Const.debug("(SaveHandler:loadChunk): surface will be loaded");
+			c = new SurfaceChunk(map,p1,true,rend,false);
+			((SurfaceChunk) c).biome = Integer.decode(s[0][2]);
+			//((SurfaceChunk) c).sideBiome = Integer.decode(s[0][3]);
+			if(p1.x == 0)
 			{
-				c = new SurfaceChunk(p1,cl.get(p2.x,p2.y),true,rend);
-			}
-			else if(p1.x < 0)
-			{
-				c = new SurfaceChunk(p1,cl.get(p2.x,p2.y),true,rend);
-			}
-			else
-			{
-				c = new SurfaceChunk(new Point(0,0),null,true,rend);
-				System.err.println("erreur de selection de chunk");
+				System.err.println("error while loading chunk, wrong selection");
 				System.exit(1);
 			}
 		}
@@ -177,24 +233,25 @@ public class SaveHandler
 		{
 			for(int j = 0;j < Const.tailleChunkY;j++)
 			{
-				int id = Integer.decode(parameters[i*Const.tailleChunkY + j*3]);
+				int id = Integer.decode(parameters[i*Const.tailleChunkY*3 + j*3]);
 				c.cases[i][j] = new Tile(i*Const.tailleCase,j*Const.tailleCase,Block.getBlock(id));
-				c.cases[i][j].subID = Integer.decode(parameters[i*Const.tailleChunkY + j*3+1]);
-				c.cases[i][j].ore = new Ore(Integer.decode(parameters[i*Const.tailleChunkY + j*3+2]),rend.getAPI());
+				c.cases[i][j].subID = Integer.decode(parameters[i*Const.tailleChunkY*3 + j*3+1]);
+				c.cases[i][j].ore = new Ore(Integer.decode(parameters[i*Const.tailleChunkY*3 + j*3+2]),rend.getAPI());
 				//s = s + c.cases[i][j].blockID + " " + c.cases[i][j].subID + " " + c.cases[i][j].ore.id + " ";
 			}
 		}
-		System.out.println(c.cases[0][0].getBlockID());
+		/*System.out.println(c.cases[0][0].getBlockID());
 		System.out.println(c.cases[0][0].subID);
 		System.out.println(c.cases[0][0].ore.id);
 		
 		System.out.println(c.cases[0][1].getBlockID());
 		System.out.println(c.cases[0][1].subID);
-		System.out.println(c.cases[0][1].ore.id);
+		System.out.println(c.cases[0][1].ore.id);*/
 	}
 	
 	private void saveUpLeft() throws IOException
 	{
+		out.write("#chunks:\n");
 		out.write("#up left\n");
 		for(int i = 0;i < sizes[0];i++)
 		{
@@ -287,14 +344,12 @@ public class SaveHandler
 	
 	private void saveChunk(Chunk c) throws IOException
 	{
-		if(c.pos.x == 0 && c.pos.y == 0)
+		out.write(c.pos.x + " " + c.pos.y + " ");
+		if(c instanceof SurfaceChunk && !(c instanceof SpawnChunk))
 		{
-			out.write(c.pos.x + " " + c.pos.y + "\n");
+			out.write(((SurfaceChunk) c).biome + " " + ((SurfaceChunk) c).sideBiome);
 		}
-		else
-		{
-			out.write(c.pos.x + " " + c.pos.y + " " + c.cSide.pos.x + " " + c.cSide.pos.y + "\n");
-		}
+		out.write("\n");
 		String s = "";
 		for(int i = 0;i < Const.tailleChunkX;i++)
 		{

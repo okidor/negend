@@ -60,7 +60,8 @@ public class CustomIndex2DList<T>
 	{
 		ArrayList<ArrayList<T>> chosenList = chooseList(indexX,indexY);
 		fillGap(chosenList,indexX,indexY);
-		chosenList.get(abs(indexX)).add(abs(indexY),element);
+		addOrReplace(chosenList,indexX,indexY,element);
+		//chosenList.get(abs(indexX)).add(abs(indexY),element);
 	}
 	
 	public boolean contains(Object o)
@@ -124,16 +125,38 @@ public class CustomIndex2DList<T>
 		}
 	}
 	
-	public void fillGap(ArrayList<ArrayList<T>> al,int indexX,int indexY)
+	private void fillGap(ArrayList<ArrayList<T>> al,int indexX,int indexY)
 	{
 		while(abs(indexX) >= al.size())
 		{
 			al.add(new ArrayList<T>());
 		}
 		ArrayList<T> subAl = al.get(abs(indexX));
-		while(abs(indexY) >= subAl.size())
+		while(abs(indexY) >= subAl.size()+1)
 		{
 			subAl.add(null);
+		}
+	}
+	
+	private void addOrReplace(ArrayList<ArrayList<T>> chosenList,int indexX,int indexY,T element)
+	{
+		if(chosenList.get(abs(indexX)).size() > abs(indexY))
+		{
+			if(chosenList.get(abs(indexX)).get(abs(indexY)) != null)
+			{
+				System.out.println("warning removing existing element at index " + indexX + ", " + indexY);
+				//new Exception().printStackTrace();
+			}
+			chosenList.get(abs(indexX)).remove(abs(indexY));
+			chosenList.get(abs(indexX)).add(abs(indexY),element);
+		}
+		else if(chosenList.get(abs(indexX)).size() == abs(indexY))
+		{
+			chosenList.get(abs(indexX)).add(element);
+		}
+		else
+		{
+			System.err.println("size < indexY");
 		}
 	}
 	

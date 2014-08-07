@@ -52,8 +52,8 @@ public class Mob extends AliveEntity
 	
 	public void onDeath()
 	{
+		Const.debug("(Mob:onDeath) removing mob from list");
 		currentChunk.mobList.remove(this);
-		destroy();
 	}
 	
 	public void setTarget()
@@ -114,6 +114,7 @@ public class Mob extends AliveEntity
 		if(damaged)
 		{
 			rend.getAPI().drawAlphaRect(pos, pos.clone(tailleX,tailleY),"red",0.5f);
+			rend.getAPI().clearFilter();
 		}
 	}
 	
@@ -129,9 +130,9 @@ public class Mob extends AliveEntity
 				{
 					jump();
 				}
-				boolean outOfChunk = currentCaseLeft().coord.x >= pos.x;
-				boolean wontCollide = currentCaseLeft().xG - pos.x < -2;
-				sideActions(glapi,0,leftOfHead(),leftOfFeet(),currentCaseLeft(),HeadLeft(),cAround[3],cAround[1],-2,1,currentCaseLeft().xG,Const.tailleChunkX -1,/*-1,*/outOfChunk,pos.x,wontCollide);
+				pos.x = pos.x - 2;
+				turned = 0;
+				Physic.checkCollisionFromLeft(this, glapi);
 			}
 			else if(target.pos.x+targetOffsetX > pos.x)
 			{
@@ -139,64 +140,10 @@ public class Mob extends AliveEntity
 				{
 					jump();
 				}
-				boolean outOfChunk = currentCaseRight().coord.x + Const.tailleCase <= pos.x+tailleX;
-				boolean wontCollide = currentCaseRight().xD - (pos.x + tailleX) > 2;
-				sideActions(glapi,2,rightOfHead(),rightOfFeet(),currentCaseRight(),HeadRight(),cAround[5],cAround[1],2,2,currentCaseRight().xD,0,/*1,*/outOfChunk,pos.x + tailleX,wontCollide);
+				pos.x = pos.x + 2;
+				turned = 2;
+				Physic.checkCollisionFromRight(this, glapi);
 			}
-		}
-	}
-	
-	public void sideActions(AvaloneGLAPI glapi,int turn,Tile sidePlayerHead,Tile sidePlayerFeet,Tile currentCaseSide,Tile playerHeadSide,Chunk sideChunk,Chunk cUp,int sideDepl,int chunkTransition,int blockX,int offsetX,boolean outOfChunk,int posX,boolean wontCollide)
-	{
-		turned = turn;		//selectionne la texture du perso
-		if((!sidePlayerHead.getBlockSolidity().equals("solid")/* || sidePlayerHead.block.layer > layer*/ ) &&
-		   (!sidePlayerFeet.getBlockSolidity().equals("solid")/* || sidePlayerFeet.block.layer > layer*/))
-		{
-			if(sidePlayerHead.getBlockID() == -1 && sidePlayerFeet.getBlockID() == -1)
-			{
-				if(outOfChunk)
-				{
-					if(!sideChunk.cases[offsetX][playerHeadSide.num.y].equals("solid") && 
-					   !sideChunk.cases[offsetX][currentCaseSide.num.y].equals("solid"))
-					{
-						changeChunk(sideChunk,chunkTransition,glapi);
-					}
-					else
-					{
-						int diff = blockX - posX;
-						pos.x = pos.x + diff;
-					}
-				}
-				else
-				{
-					pos.x = pos.x + sideDepl;
-				}
-			}
-			else if(sidePlayerHead.getBlockID() == -1 && playerHeadSide.getBlockID() == -1)
-			{
-				if(!cUp.cases[sidePlayerFeet.num.x][0].getBlockSolidity().equals("solid") && !sidePlayerFeet.getBlockSolidity().equals("solid"))
-				{
-					pos.x = pos.x + sideDepl;
-				}
-				else
-				{
-					int diff = blockX - posX;
-					pos.x = pos.x + diff;
-				}
-			}
-			else
-			{
-				pos.x = pos.x + sideDepl;
-			}
-		}
-		else if(wontCollide)
-		{
-			pos.x = pos.x + sideDepl;
-		}
-		else
-		{
-			int diff = blockX - posX;
-			pos.x = pos.x + diff;
 		}
 	}
 	

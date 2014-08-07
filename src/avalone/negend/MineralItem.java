@@ -17,4 +17,9 @@ public class MineralItem extends Item
 		p.moveCoords(7, 7);
 		rend.drawMineral(p,p.clone(16),color);
 	}
+	
+	public void setType()
+	{
+		type = 2;
+	}
 }

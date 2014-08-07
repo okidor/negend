@@ -20,6 +20,7 @@ public class Block
 	public static final Block redstone = new Block(7,new String[]{"redstone"},"solid");
 	public static final Block sand = new Block(8,new String[]{"sand"},"solid");
 	public static final Block plank = new Block(9,new String[]{"plank"},"solid");
+	public static final Block snow = new Block(10,new String[]{"snow", "snow_up", "snow_left", "snow_right"},"solid");
 			
 	private Block(int id,String[] textures,String solidity)
 	{
@@ -43,6 +44,7 @@ public class Block
 			case 7 : return redstone;
 			case 8 : return sand;
 			case 9 : return plank;
+			case 10 : return snow;
 			default : return undefined;
 		}
 	}
@@ -56,54 +58,6 @@ public class Block
 		}
 		return textures[subID]  + ".png";
 	}
-	
-	/*public void setLayer(Renderer rend)
-	{
-		layer = rend.getLayerFromID(blockID,subID);
-	}*/
-	
-	/*public void flow(Renderer rend,Block down,Block left,Block right,Block leftLeft,Block rightRight)
-	{
-		//System.out.println(left.blockID);
-		if(down.blockID == 0)
-		{
-			down.blockID = blockID;
-			down.subID = 0;
-			blockID = 0;
-			subID = 0;
-			light = Const.maxLight;
-			//System.out.println(blockID);
-		}
-		else if(subID < 5 && down.blockID != blockID)
-		{
-			if(left.blockID == 0)
-			{
-				left.blockID = blockID;
-				left.subID = subID + 1;
-			}
-			if(right.blockID == 0)
-			{
-				right.blockID = blockID;
-				right.subID = subID + 1;
-			}
-			if(left.blockID == blockID && leftLeft.blockID == blockID)
-			{
-				if(subID < left.subID && left.subID < leftLeft.subID)
-				{
-					subID++;
-					leftLeft.subID--;
-				}
-			}
-			if(right.blockID == blockID && rightRight.blockID == blockID)
-			{
-				if(subID < right.subID && right.subID < rightRight.subID)
-				{
-					subID++;
-					rightRight.subID--;
-				}
-			}
-		}
-	}*/
 	
 	/*public void debugShadow(Renderer rend,int offsetX,int offsetY)
 	{

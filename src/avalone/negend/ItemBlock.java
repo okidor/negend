@@ -6,4 +6,9 @@ public class ItemBlock extends Item
 	{
 		super(id, subID, EnumItem.standardBlock, 0, 0,Block.getBlock(id).getTexture(subID));
 	}
+	
+	public void setType()
+	{
+		type = 1;
+	}
 }
